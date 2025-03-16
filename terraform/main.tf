@@ -1,6 +1,11 @@
 resource "azurerm_resource_group" "rg" {
   name     = "example-resources"
   location = var.azure_location
+
+  lifecycle {
+    prevent_destroy = true   # Prevent accidental deletion
+    ignore_changes  = [tags] # Ignore tag changes to prevent unnecessary updates
+  }
 }
 
 resource "azurerm_app_service_plan" "app_service_plan" {
@@ -8,7 +13,7 @@ resource "azurerm_app_service_plan" "app_service_plan" {
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   kind                = "Linux"
-  reserved            = true # <-- Required for Linux
+  reserved            = true # Required for Linux
 
   sku {
     tier = "Basic"
@@ -27,16 +32,23 @@ resource "azurerm_app_service" "web_app" {
   }
 
   app_settings = {
-    # This references the Datadog API key from variables.tf
     "DATADOG_API_KEY" = var.datadog_api_key
+  }
+
+  lifecycle {
+    ignore_changes = [app_settings] # Prevent redeployment if app settings change manually
   }
 }
 
-# Basic Datadog Monitor for your Azure Web App
+# Datadog Monitor for Azure Web App
 resource "datadog_monitor" "webapp_monitor" {
   name    = "Azure Web App Health Check"
   type    = "metric alert"
   query   = "avg(last_5m):avg:azure.app_service.requests.count{resource_group:example-resources} > 100"
   message = "High request count detected!"
   tags    = ["webapp", "azure"]
+
+  lifecycle {
+    ignore_changes = [query] # Prevents recreation if the query changes
+  }
 }
