@@ -98,18 +98,23 @@ jobs:
         with:
           fetch-depth: 1
 
-      # 2. Download the previously uploaded plan artifact
+      # 2. Install Terraform
+      - name: "Set up Terraform"
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.0 # Make sure this matches your Terraform version
+
+      # 3. Download the previously uploaded plan artifact
       - name: "Download Terraform Plan"
         uses: actions/download-artifact@v4
         with:
           name: tfplan
           path: terraform
 
-      # 3. Apply the plan
+      # 4. Apply the plan
       - name: "Terraform Apply"
         working-directory: terraform
         env:
           TF_VAR_datadog_api_key: ${{ secrets.DATADOG_API_KEY }}
           TF_VAR_datadog_app_key: ${{ secrets.DATADOG_APP_KEY }}
-        run: terraform apply \
-          -auto-approve tfplan
+        run: terraform apply -auto-approve tfplan
