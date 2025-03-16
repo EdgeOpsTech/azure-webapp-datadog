@@ -8,6 +8,7 @@ resource "azurerm_app_service_plan" "app_service_plan" {
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   kind                = "Linux"
+  reserved            = true # <-- Required for Linux
 
   sku {
     tier = "Basic"
@@ -26,10 +27,12 @@ resource "azurerm_app_service" "web_app" {
   }
 
   app_settings = {
+    # This references the Datadog API key from variables.tf
     "DATADOG_API_KEY" = var.datadog_api_key
   }
 }
 
+# Basic Datadog Monitor for your Azure Web App
 resource "datadog_monitor" "webapp_monitor" {
   name    = "Azure Web App Health Check"
   type    = "metric alert"

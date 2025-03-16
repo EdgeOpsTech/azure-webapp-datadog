@@ -1,4 +1,10 @@
-terraform.tfstate
-terraform.tfstate.backup
+# Terraform state
+*.tfstate
+*.tfstate.backup
 .terraform/
-terraform.tfvars
+
+# Sensitive variable files
+*.tfvars
+
+# Plan files
+*.tfplan

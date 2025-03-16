@@ -2,11 +2,9 @@ name: "Terraform: Azure WebApp & Datadog Integration"
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
   push:
-    branches:
-      - main
+    branches: [main]
 
 permissions:
   contents: read
@@ -17,43 +15,62 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      # Azure Credentials
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
       ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      # Datadog credentials
       DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+      DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
 
     steps:
+      # 1. Checkout the repository
       - name: "Checkout Repository"
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1 # ✅ Remove "path: terraform" to checkout in default directory
+          fetch-depth: 1
 
+      # 2. Debug: list files to ensure .tf files exist in terraform/
       - name: "Debug: List Files"
-        run: ls -la terraform
+        run: |
+          echo "Root Directory:"
+          ls -la
+          echo "Terraform Directory:"
+          ls -la terraform
 
+      # 3. Set up Terraform
       - name: "Set up Terraform"
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.6.0
 
+      # 4. Initialize in the terraform directory
       - name: "Terraform Init"
+        working-directory: terraform
         run: terraform init
 
+      # 5. (Optional) Check Terraform formatting
       - name: "Terraform Format Check"
+        working-directory: terraform
         run: terraform fmt -check
 
+      # 6. Validate .tf configuration
       - name: "Terraform Validate"
+        working-directory: terraform
         run: terraform validate
 
+      # 7. Generate a plan and store it in tfplan
       - name: "Terraform Plan"
+        working-directory: terraform
         run: terraform plan -out=tfplan
 
+      # 8. Upload the plan artifact so the apply step can download it
       - name: "Upload Terraform Plan"
         uses: actions/upload-artifact@v4
         with:
           name: tfplan
-          path: terraform
+          path: terraform/tfplan
 
   terraform-apply:
     name: "Terraform Apply"
@@ -62,25 +79,30 @@ jobs:
     if: github.event_name == 'push'
 
     env:
+      # Azure Credentials
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
       ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      # Datadog credentials
       DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+      DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
 
     steps:
+      # 1. Checkout the repo again
       - name: "Checkout Repository"
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
-          path: terraform
 
+      # 2. Download the previously uploaded plan artifact
       - name: "Download Terraform Plan"
         uses: actions/download-artifact@v4
         with:
           name: tfplan
           path: terraform
 
+      # 3. Apply the plan
       - name: "Terraform Apply"
         working-directory: terraform
         run: terraform apply -auto-approve tfplan

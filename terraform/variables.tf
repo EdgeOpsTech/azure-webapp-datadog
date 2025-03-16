@@ -1,10 +1,15 @@
 variable "datadog_api_key" {
-  description = "Datadog API Key"
   type        = string
+  description = "Datadog API key used by the Datadog provider and Azure app setting."
+}
+
+variable "datadog_app_key" {
+  type        = string
+  description = "Datadog Application key required by the Datadog provider."
 }
 
 variable "azure_location" {
-  description = "Azure region"
   type        = string
-  default     = "East US"
+  description = "Azure region where resources are created."
+  default     = "eastus"
 }
