@@ -1,0 +1,98 @@
+name: "Terraform: Azure WebApp & Datadog Integration"
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  terraform-plan:
+    name: "Terraform Plan"
+    runs-on: ubuntu-latest
+
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v4
+
+      - name: "Set up Terraform"
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.0
+
+      - name: "Terraform Init"
+        run: terraform init
+
+      - name: "Terraform Format Check"
+        run: terraform fmt -check
+
+      - name: "Terraform Validate"
+        run: terraform validate
+
+      - name: "Terraform Plan"
+        run: terraform plan -out=tfplan
+
+      - name: "Upload Terraform Plan"
+        uses: actions/upload-artifact@v3
+        with:
+          name: tfplan
+          path: tfplan
+
+  terraform-apply:
+    name: "Terraform Apply"
+    runs-on: ubuntu-latest
+    needs: terraform-plan
+    if: github.event_name == 'push'
+
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v4
+
+      - name: "Set up Terraform"
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.0
+
+      - name: "Download Terraform Plan"
+        uses: actions/download-artifact@v3
+        with:
+          name: tfplan
+
+      - name: "Terraform Apply"
+        run: terraform apply -auto-approve tfplan
+
+  datadog_monitoring:
+    name: "Configure Datadog"
+    runs-on: ubuntu-latest
+    needs: terraform-apply
+    if: github.event_name == 'push'
+
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v4
+
+      - name: "Set up Datadog Agent"
+        run: |
+          DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=${{ secrets.DATADOG_API_KEY }} DD_SITE="datadoghq.com" bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)"
+
+      - name: "Verify Datadog Integration"
+        run: sudo datadog-agent status
