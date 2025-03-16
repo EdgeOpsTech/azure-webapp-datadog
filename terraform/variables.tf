@@ -5,11 +5,18 @@ variable "datadog_api_key" {
 
 variable "datadog_app_key" {
   type        = string
-  description = "Datadog Application key required by the Datadog provider."
+  description = "Datadog APP key required by the Datadog Terraform provider."
 }
 
 variable "azure_location" {
   type        = string
   description = "Azure region where resources are created."
-  default     = "eastus"
+  default     = "East US"
+}
+
+# Existing Resource Group (User must provide this)
+variable "existing_resource_group_name" {
+  type        = string
+  description = "Name of the existing Azure Resource Group."
+  default     = "AzureTerraForm-resources" # Change to your actual resource group
 }

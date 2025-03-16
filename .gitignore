@@ -1,4 +1,4 @@
-# Terraform state
+# Terraform State Files
 *.tfstate
 *.tfstate.backup
 .terraform/
@@ -6,5 +6,5 @@
 # Sensitive variable files
 *.tfvars
 
-# Plan files
+# Terraform Plan Files
 *.tfplan
