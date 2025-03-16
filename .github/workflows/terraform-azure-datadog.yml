@@ -63,13 +63,10 @@ jobs:
       # 7. Generate a plan and store it in tfplan
       - name: "Terraform Plan"
         working-directory: terraform
-        run: terraform plan \
-          -out=tfplan \
-          -var="datadog_api_key=${{ env.DATADOG_API_KEY }}" \
-          -var="datadog_app_key=${{ env.DATADOG_APP_KEY }}"
         env:
-          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
-          DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
+          TF_VAR_datadog_api_key: ${{ secrets.DATADOG_API_KEY }}
+          TF_VAR_datadog_app_key: ${{ secrets.DATADOG_APP_KEY }}
+        run: terraform plan -out=tfplan
 
       # 8. Upload the plan artifact so the apply step can download it
       - name: "Upload Terraform Plan"
@@ -111,10 +108,8 @@ jobs:
       # 3. Apply the plan
       - name: "Terraform Apply"
         working-directory: terraform
-        run: terraform apply \
-          -auto-approve tfplan \
-          -var="datadog_api_key=${{ env.DATADOG_API_KEY }}" \
-          -var="datadog_app_key=${{ env.DATADOG_APP_KEY }}"
         env:
-          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
-          DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
+          TF_VAR_datadog_api_key: ${{ secrets.DATADOG_API_KEY }}
+          TF_VAR_datadog_app_key: ${{ secrets.DATADOG_APP_KEY }}
+        run: terraform apply \
+          -auto-approve tfplan
